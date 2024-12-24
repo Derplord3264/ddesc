@@ -83,33 +83,60 @@ function transformSpeech(text) {
         { replace: '-all', to: '*burp*', percentage: 6 }
     ];
 
-    let transformedText = text;
-    rules.forEach(rule => {
-        const regex = createRegex(rule);
-        transformedText = transformedText.replace(regex, rule.to);
-    });
+    let transformedText = '';
+    for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        let replaced = false;
+
+        rules.forEach(rule => {
+            if (replaced) return;
+
+            const { replace, to, percentage, pre, match } = rule;
+
+            if (Math.random() * 100 < percentage) {
+                if (replace === '-space') {
+                    if (char === ' ' && (!pre || pre.some(p => text.substring(0, i).endsWith(p)) === match)) {
+                        char = to;
+                        replaced = true;
+                    }
+                } else if (replace === '-start' && i === 0) {
+                    char = to + char;
+                    replaced = true;
+                } else if (replace === '-end' && i === text.length - 1) {
+                    char = char + to;
+                    replaced = true;
+                } else if (replace === '-random') {
+                    if (Math.random() * 100 < percentage) {
+                        char += to;
+                        replaced = true;
+                    }
+                } else if (replace === '-all') {
+                    char = to;
+                    replaced = true;
+                } else if (pre && match !== undefined) {
+                    const regex = match ? new RegExp(`(?<=${pre.join('|')})${replace}`, 'i') : new RegExp(`(?<!${pre.join('|')})${replace}`, 'i');
+                    if (regex.test(text.substring(0, i + 1))) {
+                        char = char.replace(new RegExp(replace, 'i'), to);
+                        replaced = true;
+                    }
+                } else if (pre) {
+                    const regex = new RegExp(`(${pre.join('|')})${replace}`, 'i');
+                    if (regex.test(text.substring(0, i + 1))) {
+                        char = char.replace(new RegExp(replace, 'i'), to);
+                        replaced = true;
+                    }
+                } else {
+                    const regex = new RegExp(`${replace}`, 'i');
+                    if (regex.test(char)) {
+                        char = char.replace(regex, to);
+                        replaced = true;
+                    }
+                }
+            }
+        });
+
+        transformedText += char;
+    }
 
     return transformedText;
-}
-
-function createRegex(rule) {
-    if (rule.replace === '-space') {
-        return /\s/g;
-    } else if (rule.replace === '-start') {
-        return new RegExp('^', 'g');
-    } else if (rule.replace === '-end') {
-        return new RegExp('$', 'g');
-    } else if (rule.replace === '-random') {
-        return new RegExp('(.)', 'g');
-    } else if (rule.replace === '-all') {
-        return /./g;
-    } else {
-        if (rule.pre && rule.match !== undefined) {
-            return new RegExp(`(?<!${rule.pre.join('|')})${rule.replace}`, 'gi');
-        } else if (rule.pre) {
-            return new RegExp(`(${rule.pre.join('|')})${rule.replace}`, 'gi');
-        } else {
-            return new RegExp(`${rule.replace}`, 'gi');
-        }
-    }
 }
