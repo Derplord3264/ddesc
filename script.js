@@ -46,7 +46,6 @@ function transformSpeech(text) {
         { replace: 'u', to: 'uo', pre: ['u'], match: false, percentage: 60 },
         { replace: 'that', to: 'taht', percentage: 20 },
         { replace: 'p', to: 'b', percentage: 30 },
-        { replace: 'p', to: 'b', percentage: 70 },
         { replace: 'up', to: 'ubb', percentage: 80 },
         { replace: 'o', to: 'oh', percentage: 20 },
         { replace: 'ei', to: 'i', percentage: 30 },
@@ -58,29 +57,12 @@ function transformSpeech(text) {
         { replace: 'wtf', to: 'wft', percentage: 20 },
         { replace: 'lol', to: 'loool', percentage: 80 },
         { replace: 'afk', to: 'aafkayyy', percentage: 30 },
-        { replace: 'write', to: 'wreitt', pre: ['you can','you can still','you can not'], match: false, percentage: 80 },
+        { replace: 'write', to: 'wreitt', pre: ['you can', 'you can still', 'you can not'], match: false, percentage: 80 },
         { replace: 'drink', to: 'booze', percentage: 80 },
         { replace: '?', to: '????', pre: ['?'], match: false, percentage: 80 },
         { replace: '-space', to: '', pre: ['h', 'g', 'w'], match: true, percentage: 10 },
-        { replace: '-space', to: '', percentage: 30 },
-        { replace: '-space', to: '', percentage: 10 },
-        { replace: '-start', to: 'dho', percentage: 15 },
-        { replace: '-start', to: 'hhn', percentage: 10 },
-        { replace: '-random', to: 'lu', percentage: 10 },
-        { replace: '-random', to: 'lug', percentage: 10 },
-        { replace: '-random', to: 'blub', percentage: 20 },
-        { replace: '-random', to: 'lerg', percentage: 40 },
-        { replace: '-random', to: 'gul', percentage: 40 },
-        { replace: '-random', to: ' ', percentage: 100 },
-        { replace: '-random', to: ' ', percentage: 60 },
-        { replace: '-random', to: ' ', percentage: 50 },
         { replace: '-end', to: '!', percentage: 40 },
-        { replace: '-random', to: ' *hic* ', percentage: 80 },
-        { replace: '-random', to: ' *hic* ', percentage: 15 },
-        { replace: '-space', to: ' *hic* ', percentage: 5 },
-        { replace: '-end', to: ' *hic*', percentage: 70 },
-        { replace: '-all', to: '*burp*', percentage: 3 },
-        { replace: '-all', to: '*burp*', percentage: 6 }
+        { replace: '-random', to: ' *hic* ', percentage: 80 }
     ];
 
     let transformedText = '';
@@ -92,6 +74,8 @@ function transformSpeech(text) {
             if (replaced) return;
 
             const { replace, to, percentage, pre, match } = rule;
+            const escapedReplace = replace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special chars
+            const escapedPre = pre ? pre.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') : null;
 
             if (Math.random() * 100 < percentage) {
                 if (replace === '-space') {
@@ -99,9 +83,6 @@ function transformSpeech(text) {
                         char = to;
                         replaced = true;
                     }
-                } else if (replace === '-start' && i === 0) {
-                    char = to + char;
-                    replaced = true;
                 } else if (replace === '-end' && i === text.length - 1) {
                     char = char + to;
                     replaced = true;
@@ -110,23 +91,16 @@ function transformSpeech(text) {
                         char += to;
                         replaced = true;
                     }
-                } else if (replace === '-all') {
-                    char = to;
-                    replaced = true;
-                } else if (pre && match !== undefined) {
-                    const regex = match ? new RegExp(`(?<=${pre.join('|')})${replace}`, 'i') : new RegExp(`(?<!${pre.join('|')})${replace}`, 'i');
+                } else if (escapedPre) {
+                    const regex = match
+                    ? new RegExp(`(?<=${escapedPre})${escapedReplace}`, 'i')
+                    : new RegExp(`(?<!${escapedPre})${escapedReplace}`, 'i');
                     if (regex.test(text.substring(0, i + 1))) {
-                        char = char.replace(new RegExp(replace, 'i'), to);
-                        replaced = true;
-                    }
-                } else if (pre) {
-                    const regex = new RegExp(`(${pre.join('|')})${replace}`, 'i');
-                    if (regex.test(text.substring(0, i + 1))) {
-                        char = char.replace(new RegExp(replace, 'i'), to);
+                        char = char.replace(new RegExp(escapedReplace, 'i'), to);
                         replaced = true;
                     }
                 } else {
-                    const regex = new RegExp(`${replace}`, 'i');
+                    const regex = new RegExp(`${escapedReplace}`, 'i');
                     if (regex.test(char)) {
                         char = char.replace(regex, to);
                         replaced = true;
@@ -140,3 +114,4 @@ function transformSpeech(text) {
 
     return transformedText;
 }
+
